@@ -1,3 +1,3 @@
-import { PUBLIC_ROUTES } from './routes';
+import { APP_ROUTES } from './routes';
 
-export { PUBLIC_ROUTES };
+export { APP_ROUTES };

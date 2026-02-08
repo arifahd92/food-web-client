@@ -3,12 +3,10 @@ import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import { Plus } from 'lucide-react';
 
-import { httpServices } from '@/shared/services/http.service';
-import { reqUrl } from '@/shared/services/reqUrl.service';
+import { apiService, type MenuItem } from '@/shared/services/api.service';
 import { useCart } from '@/shared/contexts/cartContext';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import type { MenuItem } from '@/types';
 
 export default function Menu() {
   const { t } = useTranslation();
@@ -16,7 +14,7 @@ export default function Menu() {
 
   const { data: items = [], isLoading, isError, error } = useQuery({
     queryKey: ['menu'],
-    queryFn: () => httpServices.getData<MenuItem[]>(reqUrl.menu),
+    queryFn: apiService.getMenu,
   });
 
   if (isLoading) {

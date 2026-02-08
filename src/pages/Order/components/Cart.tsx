@@ -5,31 +5,33 @@ import { useQuery } from '@tanstack/react-query';
 
 import { ROUTES } from '@/shared/utils/routes';
 import { useCart } from '@/shared/contexts/cartContext';
-import { httpServices } from '@/shared/services/http.service';
-import { reqUrl } from '@/shared/services/reqUrl.service';
+import { apiService, type MenuItem } from '@/shared/services/api.service';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import type { MenuItem } from '@/types';
 
 export default function Cart() {
   const { t } = useTranslation();
   const { items, updateQuantity, removeFromCart } = useCart();
 
-  const { data: menuItems = [] } = useQuery({
+  const { data: menuItems = [], isLoading } = useQuery({
     queryKey: ['menu'],
-    queryFn: () => httpServices.getData<MenuItem[]>(reqUrl.menu),
-    staleTime: 1000 * 60 * 5, // Cache menu for 5 minutes
+    queryFn: apiService.getMenu,
+    staleTime: 1000 * 60 * 5,
   });
+
+  if (isLoading) {
+    return <div className="text-center py-12">Loading cart details...</div>;
+  }
 
   const cartItemsResult = items.map((cartItem) => {
     const menuItem = menuItems.find((m) => m.id === cartItem.menu_item_id);
+    if (!menuItem) return null;
     return {
       ...cartItem,
       ...menuItem,
     };
-  }).filter(item => item.id); // Filter out if menu item not found
+  }).filter((item): item is (typeof items[0] & MenuItem) => item !== null);
 
-  // Note: This is an estimated total for display. The final total comes from the backend.
   const estimatedTotal = cartItemsResult.reduce(
     (sum, item) => sum + (item.price || 0) * item.quantity,
     0

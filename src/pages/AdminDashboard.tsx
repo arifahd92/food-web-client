@@ -1,105 +1,49 @@
-import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { httpServices } from '@/shared/services/http.service';
+import { useInfiniteQuery } from '@tanstack/react-query';
+import { apiService } from '@/shared/services/api.service';
+import type { PaginatedOrderResponse } from '@/shared/services/api.service';
+import { useOrderStream } from '@/hooks/useOrderStream';
 import { Button } from '@/components/ui/button';
-import type { Order } from '@/types';
 
-interface PaginatedResponse {
-  data: Order[];
-  meta: {
-    nextCursor: string | null;
-    limit: number;
-    hasMore: boolean;
-  };
-}
+const STATUS_LABELS: Record<string, string> = {
+  RECEIVED: 'Order Received',
+  PREPARING: 'Preparing',
+  OUT_FOR_DELIVERY: 'Out for Delivery',
+  DELIVERED: 'Delivered',
+};
 
 const AdminDashboard = () => {
-  const [orders, setOrders] = useState<Order[]>([]);
-  const [nextCursor, setNextCursor] = useState<string | null>(null);
-  const [hasMore, setHasMore] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  
-  const navigate = useNavigate();
+  // Enable real-time updates
+  useOrderStream();
 
-  useEffect(() => {
-    const adminId = localStorage.getItem('adminId');
-    const adminPassword = localStorage.getItem('adminPassword');
-
-    if (!adminId || !adminPassword) {
-      navigate('/admin/login');
-      return;
-    }
-
-    // Initial fetch
-    fetchOrders();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [navigate]);
-
-  const fetchOrders = async (cursor?: string) => {
-    setIsLoading(true);
-    const adminId = localStorage.getItem('adminId');
-    const adminPassword = localStorage.getItem('adminPassword');
-
-    try {
-      const url = cursor 
-        ? `/api/orders/admin?limit=10&cursor=${cursor}`
-        : `/api/orders/admin?limit=10`;
-
-      const response = await httpServices.getData<PaginatedResponse>(
-         url,
-         {
-           headers: {
-             'x-admin-id': adminId,
-             'x-admin-password': adminPassword,
-           }
-         }
-      );
-
-      if (cursor) {
-        setOrders((prev) => [...prev, ...response.data]);
-      } else {
-        setOrders(response.data);
-      }
-      
-      setNextCursor(response.meta.nextCursor);
-      setHasMore(response.meta.hasMore);
-    } catch (error) {
-      console.error('Error fetching orders:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleLoadMore = () => {
-    if (nextCursor) {
-      fetchOrders(nextCursor);
-    }
-  };
+  const {
+    data,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    isLoading,
+    isError,
+    error
+  } = useInfiniteQuery({
+    queryKey: ['admin', 'orders'],
+    queryFn: ({ pageParam }) => apiService.getAdminOrders(10, pageParam as string | undefined),
+    initialPageParam: undefined as string | undefined,
+    getNextPageParam: (lastPage: PaginatedOrderResponse) => lastPage.nextCursor || undefined,
+  });
 
   const updateStatus = async (orderId: string, newStatus: string) => {
-    const adminId = localStorage.getItem('adminId');
-    const adminPassword = localStorage.getItem('adminPassword');
     try {
-      await httpServices.patchData(
-        `/api/orders/${orderId}/status`,
-        { status: newStatus },
-        {
-          headers: {
-            'x-admin-id': adminId,
-            'x-admin-password': adminPassword,
-          },
-        }
-      );
-      
-      // Update local state without refetching all
-      setOrders(prev => prev.map(o => 
-        o.id === orderId ? { ...o, status: newStatus as any } : o
-      ));
+      await apiService.updateOrderStatus(orderId, newStatus);
+      // No need to manually update state, the socket event will trigger invalidation
     } catch (error) {
       console.error('Error updating status:', error);
-      alert('Failed to update status. Check credentials?');
+      alert(`Failed to update status: ${(error as Error).message}`);
     }
   };
+
+  const orders = data?.pages.flatMap((page: PaginatedOrderResponse) => page.items) || [];
+
+  if (isLoading) return <div className="p-8">Loading orders...</div>;
+  if (isError) return <div className="p-8 text-red-500">Error: {(error as Error).message}</div>;
 
   return (
     <div className="p-8">
@@ -118,20 +62,27 @@ const AdminDashboard = () => {
           <tbody>
             {orders.map((order) => (
               <tr key={order.id} className="text-center">
-                <td className="py-2 px-4 border-b">{order.id}</td>
-                <td className="py-2 px-4 border-b">{order.customer_name}</td>
-                <td className="py-2 px-4 border-b">${order.total_amount.toFixed(2)}</td>
-                <td className="py-2 px-4 border-b capitalize">{order.status.replace('_', ' ')}</td>
+                <td className="py-2 px-4 border-b text-sm font-mono">{order.id}</td>
+                <td className="py-2 px-4 border-b">
+                  {order.customer_name}
+                  <br/>
+                  <span className="text-xs text-gray-500">{order.customer_email}</span>
+                </td>
+                <td className="py-2 px-4 border-b">${(order.total_amount || 0).toFixed(2)}</td>
+                <td className="py-2 px-4 border-b">
+                  <span className="px-2 py-1 rounded bg-gray-100 text-sm">
+                    {STATUS_LABELS[order.status] || order.status}
+                  </span>
+                </td>
                 <td className="py-2 px-4 border-b">
                   <select
                     value={order.status}
                     onChange={(e) => updateStatus(order.id, e.target.value)}
                     className="p-1 border rounded"
                   >
-                    <option value="order_received">Order Received</option>
-                    <option value="preparing">Preparing</option>
-                    <option value="out_for_delivery">Out for Delivery</option>
-                    <option value="delivered">Delivered</option>
+                    {Object.entries(STATUS_LABELS).map(([value, label]) => (
+                        <option key={value} value={value}>{label}</option>
+                    ))}
                   </select>
                 </td>
               </tr>
@@ -140,13 +91,16 @@ const AdminDashboard = () => {
         </table>
       </div>
       
-      {hasMore && (
-        <div className="flex justify-center">
-          <Button onClick={handleLoadMore} disabled={isLoading}>
-            {isLoading ? 'Loading...' : 'Load More'}
-          </Button>
-        </div>
-      )}
+      <div className="flex justify-center gap-4 py-4">
+          {hasNextPage && (
+            <Button 
+              onClick={() => fetchNextPage()} 
+              disabled={isFetchingNextPage}
+            >
+                {isFetchingNextPage ? 'Loading more...' : 'Load More'}
+            </Button>
+          )}
+      </div>
     </div>
   );
 };

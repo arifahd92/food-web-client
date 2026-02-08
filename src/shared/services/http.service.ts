@@ -1,9 +1,10 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import axios from 'axios';
 import { getData } from '@/shared/utils/helper';
 import { CONSTANT } from '@/shared/utils/constant';
 import { ROUTES } from '@/shared/utils/routes';
 
-const baseURL = import.meta.env.VITE_API_BASE_URL ?? '';
+const baseURL = 'http://localhost:3000';
 
 const instance = axios.create({
   baseURL,

@@ -13,20 +13,20 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 
 const STATUS_ICONS: Record<string, React.ReactNode> = {
-  order_received: <ChefHat className="h-6 w-6" />,
-  preparing: <Package className="h-6 w-6" />,
-  out_for_delivery: <Truck className="h-6 w-6" />,
-  delivered: <Check className="h-6 w-6" />,
+  RECEIVED: <ChefHat className="h-6 w-6" />,
+  PREPARING: <Package className="h-6 w-6" />,
+  OUT_FOR_DELIVERY: <Truck className="h-6 w-6" />,
+  DELIVERED: <Check className="h-6 w-6" />,
 };
 
 const STATUS_KEYS: Record<string, string> = {
-  order_received: 'app.orderReceived',
-  preparing: 'app.preparing',
-  out_for_delivery: 'app.outForDelivery',
-  delivered: 'app.delivered',
+  RECEIVED: 'app.orderReceived',
+  PREPARING: 'app.preparing',
+  OUT_FOR_DELIVERY: 'app.outForDelivery',
+  DELIVERED: 'app.delivered',
 };
 
-const FLOW = ['order_received', 'preparing', 'out_for_delivery', 'delivered'];
+const FLOW = ['RECEIVED', 'PREPARING', 'OUT_FOR_DELIVERY', 'DELIVERED'];
 
 export default function OrderStatus() {
   const { orderId } = useParams<{ orderId: string }>();

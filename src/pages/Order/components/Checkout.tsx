@@ -4,15 +4,13 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation } from '@tanstack/react-query';
 
-
 import { ROUTES, orderStatusPath } from '@/shared/utils/routes';
 import { addOrderToHistory } from '@/shared/utils/helper';
-import { reqUrl } from '@/shared/services/reqUrl.service';
-import { httpServices } from '@/shared/services/http.service';
+import { apiService } from '@/shared/services/api.service';
 import { useCart } from '@/shared/contexts/cartContext';
+import { useUser } from '@/shared/contexts/UserContext';
 import { checkoutSchema, defaultCheckoutValues } from '../schema';
 import type { CheckoutFormData } from '../schema';
-import type { Order } from '@/types';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -22,34 +20,37 @@ export default function Checkout() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { items, clearCart } = useCart();
+  const { email } = useUser();
 
   const form = useForm<CheckoutFormData>({
     resolver: zodResolver(checkoutSchema),
-    defaultValues: defaultCheckoutValues,
+    defaultValues: {
+      ...defaultCheckoutValues,
+      customer_email: email || '',
+    },
   });
 
   const placeOrder = useMutation({
     mutationFn: async (data: CheckoutFormData) => {
-      const body = {
+      return apiService.createOrder({
         customer_name: data.customer_name,
         customer_address: data.customer_address,
         customer_phone: data.customer_phone,
+        customer_email: data.customer_email,
         items: items.map((i) => ({
           menu_item_id: i.menu_item_id,
           quantity: i.quantity,
         })),
-      };
-      // Send idempotency-key in headers
-      return httpServices.postData<Order>(reqUrl.orders, body, {
-        headers: {
-          'idempotency-key': crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(),
-        }
       });
     },
     onSuccess: (order) => {
       addOrderToHistory(order.id);
       clearCart();
       navigate(orderStatusPath(order.id));
+    },
+    onError: (error) => {
+      console.error('Failed to place order:', error);
+      alert('Failed to place order. Please try again.');
     },
   });
 
@@ -99,6 +100,21 @@ export default function Checkout() {
               {form.formState.errors.customer_address && (
                 <p className="text-sm text-destructive mt-1">
                   {form.formState.errors.customer_address.message}
+                </p>
+              )}
+            </div>
+            <div>
+              <Label htmlFor="customer_email">{t('app.email')}</Label>
+              <Input
+                id="customer_email"
+                type="email"
+                {...form.register('customer_email')}
+                className="mt-1"
+                placeholder="john@example.com"
+              />
+              {form.formState.errors.customer_email && (
+                <p className="text-sm text-destructive mt-1">
+                  {form.formState.errors.customer_email.message}
                 </p>
               )}
             </div>
