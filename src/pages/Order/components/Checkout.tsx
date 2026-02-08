@@ -1,8 +1,9 @@
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation } from '@tanstack/react-query';
+
 
 import { ROUTES, orderStatusPath } from '@/shared/utils/routes';
 import { addOrderToHistory } from '@/shared/utils/helper';
@@ -16,12 +17,11 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Link } from 'react-router-dom';
 
 export default function Checkout() {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const { items, totalAmount, clearCart } = useCart();
+  const { items, clearCart } = useCart();
 
   const form = useForm<CheckoutFormData>({
     resolver: zodResolver(checkoutSchema),
@@ -37,10 +37,14 @@ export default function Checkout() {
         items: items.map((i) => ({
           menu_item_id: i.menu_item_id,
           quantity: i.quantity,
-          unit_price: i.price,
         })),
       };
-      return httpServices.postData<Order>(reqUrl.orders, body);
+      // Send idempotency-key in headers
+      return httpServices.postData<Order>(reqUrl.orders, body, {
+        headers: {
+          'idempotency-key': crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(),
+        }
+      });
     },
     onSuccess: (order) => {
       addOrderToHistory(order.id);
@@ -114,18 +118,17 @@ export default function Checkout() {
             </div>
           </CardContent>
         </Card>
-        <Card>
-          <CardHeader className="flex flex-row justify-between">
-            <span>{t('app.yourOrder')}</span>
-            <span>${totalAmount.toFixed(2)}</span>
-          </CardHeader>
-        </Card>
+        
+        <div className="text-sm text-muted-foreground mb-4">
+          Note: Total amount will be calculated by the backend.
+        </div>
+
         <Button
           type="submit"
           className="w-full"
           disabled={placeOrder.isPending}
         >
-          {placeOrder.isPending ? '...' : t('app.placeOrder')}
+          {placeOrder.isPending ? 'Processing...' : t('app.placeOrder')}
         </Button>
       </form>
     </div>

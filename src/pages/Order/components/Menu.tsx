@@ -12,7 +12,7 @@ import type { MenuItem } from '@/types';
 
 export default function Menu() {
   const { t } = useTranslation();
-  const { addItem } = useCart();
+  const { addToCart } = useCart();
 
   const { data: items = [], isLoading, isError, error } = useQuery({
     queryKey: ['menu'],
@@ -88,15 +88,7 @@ export default function Menu() {
                 <span className="font-medium">${item.price.toFixed(2)}</span>
                 <Button
                   size="sm"
-                  onClick={() =>
-                    addItem({
-                      menu_item_id: item.id,
-                      name: item.name,
-                      description: item.description,
-                      price: item.price,
-                      image_url: item.image_url,
-                    })
-                  }
+                  onClick={() => addToCart(item.id)}
                   data-testid={`add-${item.id}`}
                 >
                   <Plus className="h-4 w-4 mr-1" />

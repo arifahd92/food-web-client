@@ -30,12 +30,12 @@ instance.interceptors.response.use(
 );
 
 export const httpServices = {
-  getData: <T>(url: string) => instance.get<T>(url) as Promise<T>,
-  postData: <T>(url: string, data: unknown) =>
-    instance.post<T>(url, data) as Promise<T>,
-  putData: <T>(url: string, data: unknown) =>
-    instance.put<T>(url, data) as Promise<T>,
-  patchData: <T>(url: string, data: unknown) =>
-    instance.patch<T>(url, data) as Promise<T>,
-  deleteData: <T>(url: string) => instance.delete<T>(url) as Promise<T>,
+  getData: <T>(url: string, config?: any) => instance.get<T>(url, config) as Promise<T>,
+  postData: <T>(url: string, data: unknown, config?: any) =>
+    instance.post<T>(url, data, config) as Promise<T>,
+  putData: <T>(url: string, data: unknown, config?: any) =>
+    instance.put<T>(url, data, config) as Promise<T>,
+  patchData: <T>(url: string, data: unknown, config?: any) =>
+    instance.patch<T>(url, data, config) as Promise<T>,
+  deleteData: <T>(url: string, config?: any) => instance.delete<T>(url, config) as Promise<T>,
 };

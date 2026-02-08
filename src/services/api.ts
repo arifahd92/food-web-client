@@ -18,10 +18,10 @@ export interface MenuItem {
   image_url?: string;
 }
 
+
 export interface OrderItem {
   menu_item_id: string;
   quantity: number;
-  unit_price: number;
 }
 
 export interface CreateOrderDto {
@@ -31,6 +31,16 @@ export interface CreateOrderDto {
   items: OrderItem[];
   idempotency_key?: string;
 }
+
+
+export const OrderStatus = {
+  OrderReceived: 'order_received',
+  Preparing: 'preparing',
+  OutForDelivery: 'out_for_delivery',
+  Delivered: 'delivered',
+} as const;
+
+export type OrderStatus = (typeof OrderStatus)[keyof typeof OrderStatus];
 
 export interface OrderResponse {
   id: string;
