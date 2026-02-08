@@ -3,7 +3,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { io, Socket } from 'socket.io-client';
 import { useParams } from 'react-router-dom';
 
-const SOCKET_URL = 'http://localhost:3000';
+const SOCKET_URL = 'http://16.170.17.138:3000';
 
 import { useUser } from '@/shared/contexts/UserContext';
 

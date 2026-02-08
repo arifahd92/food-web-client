@@ -4,7 +4,8 @@ import { getData } from '@/shared/utils/helper';
 import { CONSTANT } from '@/shared/utils/constant';
 import { ROUTES } from '@/shared/utils/routes';
 
-const baseURL = 'http://localhost:3000';
+// const baseURL = 'http://localhost:3000';
+const baseURL = 'http://16.170.17.138:3000';
 
 const instance = axios.create({
   baseURL,
