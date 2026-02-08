@@ -1,6 +1,6 @@
 import { io, Socket } from 'socket.io-client';
 
-const SOCKET_URL = 'http://16.170.17.138:3000';
+const SOCKET_URL = 'https://cooperation-obvious-off-weekly.trycloudflare.com';
 
 class SocketService {
   private socket: Socket | null = null;
